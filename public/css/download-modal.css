@@ -1,0 +1,189 @@
+/* 下载选择弹窗样式 */
+.download-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.download-modal.show {
+    display: flex;
+}
+
+.download-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.download-modal-content {
+    position: relative;
+    background: var(--bg-color, #fff);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 480px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.download-modal-content h3 {
+    margin: 0 0 24px 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-color, #333);
+    text-align: center;
+}
+
+.download-modal-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.download-modal-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    border: 2px solid var(--border-color, #e0e0e0);
+    border-radius: 12px;
+    background: var(--card-bg, #f8f9fa);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.download-modal-btn:hover {
+    border-color: var(--primary-color, #667eea);
+    background: var(--primary-color-light, rgba(102, 126, 234, 0.1));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.download-modal-btn i {
+    font-size: 32px;
+    margin-bottom: 12px;
+    color: var(--primary-color, #667eea);
+}
+
+.download-modal-btn span {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-color, #333);
+    margin-bottom: 4px;
+}
+
+.download-modal-btn small {
+    font-size: 13px;
+    color: var(--text-secondary, #666);
+}
+
+.download-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary, #666);
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.download-modal-close:hover {
+    background: var(--hover-bg, rgba(0, 0, 0, 0.05));
+    color: var(--text-color, #333);
+}
+
+/* 深色模式适配 */
+body.dark-mode .download-modal-content {
+    background: var(--bg-color, #1a1a2e);
+}
+
+body.dark-mode .download-modal-content h3 {
+    color: var(--text-color, #fff);
+}
+
+body.dark-mode .download-modal-btn {
+    border-color: var(--border-color, #333);
+    background: var(--card-bg, #16213e);
+}
+
+body.dark-mode .download-modal-btn:hover {
+    background: var(--primary-color-dark, rgba(102, 126, 234, 0.2));
+}
+
+body.dark-mode .download-modal-btn span {
+    color: var(--text-color, #fff);
+}
+
+body.dark-mode .download-modal-btn small {
+    color: var(--text-secondary, #aaa);
+}
+
+body.dark-mode .download-modal-close {
+    color: var(--text-secondary, #aaa);
+}
+
+body.dark-mode .download-modal-close:hover {
+    background: var(--hover-bg, rgba(255, 255, 255, 0.1));
+    color: var(--text-color, #fff);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .download-modal-content {
+        padding: 24px;
+        max-width: 90%;
+    }
+
+    .download-modal-content h3 {
+        font-size: 20px;
+        margin-bottom: 20px;
+    }
+
+    .download-modal-btn {
+        padding: 20px;
+    }
+
+    .download-modal-btn i {
+        font-size: 28px;
+        margin-bottom: 10px;
+    }
+
+    .download-modal-btn span {
+        font-size: 16px;
+    }
+
+    .download-modal-btn small {
+        font-size: 12px;
+    }
+}

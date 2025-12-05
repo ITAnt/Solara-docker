@@ -13,12 +13,39 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const cookieSession = require('cookie-session');
+const fs = require('fs');
+const https = require('https');
+const http = require('http');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // 配置密码（在实际环境中应该使用环境变量）
 const AUTH_PASSWORD = process.env.SOLARA_PASSWORD || 'solara123';
+
+// 配置下载目录
+// Docker 环境使用 /download，本地开发使用 ./downloads
+const DOWNLOAD_DIR = process.env.DOWNLOAD_DIR || (process.env.NODE_ENV === 'production' ? '/download' : path.join(__dirname, 'downloads'));
+
+// 确保下载目录存在
+if (!fs.existsSync(DOWNLOAD_DIR)) {
+  try {
+    fs.mkdirSync(DOWNLOAD_DIR, { recursive: true });
+    console.log(`下载目录已创建: ${DOWNLOAD_DIR}`);
+  } catch (error) {
+    console.error(`创建下载目录失败: ${error.message}`);
+    console.error(`请确保有权限创建目录，或手动创建: ${DOWNLOAD_DIR}`);
+  }
+} else {
+  // 检查目录是否可写
+  try {
+    fs.accessSync(DOWNLOAD_DIR, fs.constants.W_OK);
+    console.log(`下载目录可用: ${DOWNLOAD_DIR}`);
+  } catch (error) {
+    console.error(`下载目录不可写: ${DOWNLOAD_DIR}`);
+    console.error(`请检查目录权限: chmod 755 ${DOWNLOAD_DIR}`);
+  }
+}
 
 // 信任代理（如果部署在反向代理后面）
 app.set('trust proxy', 1);
@@ -114,7 +141,7 @@ const requireAuth = (req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 公开路由（不需要认证）
-app.post('/api/login', express.json(), (req, res) => {
+app.post('/api/login', (req, res) => {
   const { password } = req.body;
 
   if (password === AUTH_PASSWORD) {
@@ -203,6 +230,127 @@ app.get('/api/debug', (req, res) => {
     }
   };
   res.json(debugInfo);
+});
+
+// 下载到服务器的 API
+app.post('/api/download-to-server', requireAuth, async (req, res) => {
+  const { url, filename } = req.body;
+
+  if (!url || !filename) {
+    return res.status(400).json({ success: false, error: '缺少必要参数' });
+  }
+
+  // 清理文件名，防止路径遍历攻击
+  const safeFilename = path.basename(filename);
+  const filepath = path.join(DOWNLOAD_DIR, safeFilename);
+
+  console.log(`开始下载到服务器: ${safeFilename}, URL: ${url}`);
+
+  let responseSent = false;
+
+  const sendError = (statusCode, message) => {
+    if (!responseSent) {
+      responseSent = true;
+      console.error(message);
+      res.status(statusCode).json({ success: false, error: message });
+    }
+  };
+
+  const cleanupFile = () => {
+    try {
+      if (fs.existsSync(filepath)) {
+        fs.unlinkSync(filepath);
+      }
+    } catch (err) {
+      console.error(`清理文件失败: ${err.message}`);
+    }
+  };
+
+  try {
+    const protocol = url.startsWith('https') ? https : http;
+    
+    const file = fs.createWriteStream(filepath);
+    
+    const request = protocol.get(url, (response) => {
+      // 处理重定向
+      if (response.statusCode === 301 || response.statusCode === 302) {
+        cleanupFile();
+        file.close();
+        const redirectUrl = response.headers.location;
+        console.log(`重定向到: ${redirectUrl}`);
+        
+        // 递归处理重定向（简单实现，实际应该限制重定向次数）
+        const redirectProtocol = redirectUrl.startsWith('https') ? https : http;
+        return redirectProtocol.get(redirectUrl, (redirectResponse) => {
+          if (redirectResponse.statusCode !== 200) {
+            return sendError(500, `下载失败: HTTP ${redirectResponse.statusCode}`);
+          }
+          
+          const newFile = fs.createWriteStream(filepath);
+          redirectResponse.pipe(newFile);
+          
+          newFile.on('finish', () => {
+            newFile.close();
+            console.log(`文件下载完成: ${safeFilename}`);
+            if (!responseSent) {
+              responseSent = true;
+              res.json({ 
+                success: true, 
+                message: '下载成功',
+                filename: safeFilename,
+                path: filepath
+              });
+            }
+          });
+          
+          newFile.on('error', (err) => {
+            cleanupFile();
+            sendError(500, `文件写入失败: ${err.message}`);
+          });
+        }).on('error', (err) => {
+          cleanupFile();
+          sendError(500, `重定向下载失败: ${err.message}`);
+        });
+      }
+
+      if (response.statusCode !== 200) {
+        cleanupFile();
+        file.close();
+        return sendError(500, `下载失败: HTTP ${response.statusCode}`);
+      }
+
+      response.pipe(file);
+
+      file.on('finish', () => {
+        file.close();
+        console.log(`文件下载完成: ${safeFilename}`);
+        if (!responseSent) {
+          responseSent = true;
+          res.json({ 
+            success: true, 
+            message: '下载成功',
+            filename: safeFilename,
+            path: filepath
+          });
+        }
+      });
+    });
+
+    request.on('error', (err) => {
+      cleanupFile();
+      file.close();
+      sendError(500, `下载失败: ${err.message}`);
+    });
+
+    file.on('error', (err) => {
+      cleanupFile();
+      sendError(500, `文件写入失败: ${err.message}`);
+    });
+
+  } catch (error) {
+    cleanupFile();
+    sendError(500, `下载错误: ${error.message}`);
+  }
 });
 
 // 导入路由

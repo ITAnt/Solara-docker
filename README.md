@@ -1,6 +1,33 @@
 基于https://github.com/akudamatata/Solara  项目进行修改，感谢原作者的无私分享。
 
-部署方法(仅针对VPS，如果是使用软路由等部署，请根据实际情况调整docker-compose文件）
+## 本地开发
+
+1. 安装依赖
+```bash
+npm install
+```
+
+2. 设置本地环境（创建下载目录）
+```bash
+chmod +x setup-local.sh
+./setup-local.sh
+```
+
+3. 启动服务
+```bash
+npm start
+```
+
+4. 访问应用
+```
+http://localhost:3001
+```
+
+默认密码: `Solara123`
+
+## 部署方法
+
+(仅针对VPS，如果是使用软路由等部署，请根据实际情况调整docker-compose文件）
 
 一、使用Dockerfile进行部署：
 
@@ -10,10 +37,9 @@
 
 cd solara
 
-3. 创建docker-compose.yml文件,填入"Dockerfile部署-docker-compose.yml"中的内容并修改以下两项内容：
+3. 创建docker-compose.yml文件,填入"Dockerfile部署-docker-compose.yml"中的内容并修改密码：
    
-- SOLARA_PASSWORD=solara123  # 修改为你的密码
-- SESSION_SECRET=KLmlKDruIBRYjrT5ct7B3xqG25ZF2p59    # 修改为随机字符串
+- SOLARA_PASSWORD=Solara123  # 修改为你的密码
 
 4. 构建项目
 docker compose build
@@ -37,7 +63,35 @@ docker compose up -d
 4. docker compose up -d
 5. 使用网站反代 127.0.0.1:3001
 
-近期修改：
+## 下载目录说明
+
+- **Docker 环境**: 使用 `/download` 目录，需要挂载到宿主机
+  ```bash
+  docker run -v ./downloads:/download ...
+  ```
+  
+  容器使用 root 用户运行，确保有权限写入挂载的目录。
+
+- **本地开发**: 使用 `./downloads` 目录，自动创建
+
+- **自定义目录**: 通过环境变量指定
+  ```bash
+  DOWNLOAD_DIR=/path/to/downloads npm start
+  ```
+
+## 构建多架构镜像
+
+详见 [BUILD_IMAGES.md](BUILD_IMAGES.md)
+
+```bash
+# 构建 AMD64
+./build-amd64.sh
+
+# 构建 ARM64
+./build-arm64.sh
+```
+
+## 近期修改：
 1. 使用GD音乐台API接口，对移动端界面做了调整。
 2. 播放时遇到加载失败或播放进度卡住时，尝试降低音质，如果还是无法播放就跳过，播放下一首。
 3. 探索雷达功能做了修改，默认使用 wy 搜索两个关键词，筛选10首音乐自动播放，播放列表快结束时静默添加10首歌曲。

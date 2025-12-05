@@ -1,15 +1,15 @@
+version: '3.8'
+
 services:
   solara-music:
-    build: . 
-    container_name: solara-music
-    restart: unless-stopped
+    build: .
     ports:
       - "3001:3001"
     environment:
-      - NODE_ENV=production
       - PORT=3001
       - SOLARA_PASSWORD=Solara123  # 修改为你的密码
       - DOWNLOAD_DIR=/download  # 容器内的下载目录
+      - NODE_ENV=production
     volumes:
-      - ./logs:/app/logs
-      - ./downloads:/download  # 下载目录映射
+      - ./downloads:/download  # 映射下载目录到宿主机
+    restart: unless-stopped

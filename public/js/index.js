@@ -4167,12 +4167,8 @@ async function downloadWithQuality(event, index, type, quality) {
         dynamicMenu.remove();
     }
 
-    try {
-        await downloadSong(song, quality);
-    } catch (error) {
-        console.error("下载失败:", error);
-        showNotification("下载失败，请稍后重试", "error");
-    }
+    // 显示下载方式选择弹窗
+    showDownloadModal(song, quality);
 }
 
 // 修复：播放搜索结果 - 添加到播放列表而不是清空
@@ -6097,3 +6093,87 @@ window.setLoadTimeout = function(timeoutMs) {
 // 替换原有的立即执行代码，改为调用initializeApp
 document.addEventListener('DOMContentLoaded', initializeApp);
 dom.audioPlayer.addEventListener("ended", autoPlayNext);
+
+
+// 播放列表下载按钮事件处理
+function initializePlaylistEventHandlers() {
+    if (!dom.playlistItems) return;
+
+    // 使用事件委托处理播放列表项的点击事件
+    dom.playlistItems.addEventListener('click', (e) => {
+        const target = e.target;
+        const button = target.closest('button[data-playlist-action]');
+        
+        if (!button) {
+            // 点击播放列表项本身
+            const item = target.closest('.playlist-item');
+            if (item && !target.closest('button')) {
+                const index = parseInt(item.dataset.index, 10);
+                if (!isNaN(index)) {
+                    playPlaylistSong(index);
+                }
+            }
+            return;
+        }
+
+        e.stopPropagation();
+        e.preventDefault();
+
+        const action = button.dataset.playlistAction;
+        const index = parseInt(button.dataset.index, 10);
+
+        if (isNaN(index)) return;
+
+        if (action === 'remove') {
+            removeFromPlaylist(index);
+        } else if (action === 'download') {
+            // 显示音质选择菜单
+            showPlaylistDownloadQualityMenu(button, index);
+        }
+    });
+}
+
+// 显示播放列表下载音质选择菜单
+function showPlaylistDownloadQualityMenu(button, index) {
+    // 移除所有现有的音质菜单
+    document.querySelectorAll('.playlist-download-quality-menu').forEach(menu => menu.remove());
+
+    const song = state.playlistSongs[index];
+    if (!song) return;
+
+    // 创建音质选择菜单
+    const menu = document.createElement('div');
+    menu.className = 'playlist-download-quality-menu';
+    menu.innerHTML = QUALITY_LEVELS.map(q => `
+        <div class="quality-option" data-quality="${q.value}">
+            ${q.label} <span class="quality-desc">${q.description}</span>
+        </div>
+    `).join('');
+
+    // 定位菜单
+    button.style.position = 'relative';
+    button.appendChild(menu);
+
+    // 点击音质选项
+    menu.addEventListener('click', (e) => {
+        const option = e.target.closest('.quality-option');
+        if (!option) return;
+
+        const quality = option.dataset.quality;
+        menu.remove();
+
+        // 显示下载方式选择弹窗
+        showDownloadModal(song, quality);
+    });
+
+    // 点击其他地方关闭菜单
+    setTimeout(() => {
+        const closeMenu = (e) => {
+            if (!menu.contains(e.target) && e.target !== button) {
+                menu.remove();
+                document.removeEventListener('click', closeMenu);
+            }
+        };
+        document.addEventListener('click', closeMenu);
+    }, 100);
+}

@@ -8,7 +8,8 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - SOLARA_PASSWORD=solara123  # 修改为你的密码
-      - SESSION_SECRET=KLmlKDruIBRYjrT5ct7B3xqG25ZF2p59    # 修改为随机字符串
+      - SOLARA_PASSWORD=Solara123  # 修改为你的密码
+      - DOWNLOAD_DIR=/download  # 容器内的下载目录
     volumes:
       - ./logs:/app/logs
+      - ./downloads:/download  # 下载目录映射

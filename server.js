@@ -89,16 +89,24 @@ const requireAuth = (req, res, next) => {
     return next();
   }
 
+  // 检查 session 是否已认证
   if (req.session.authenticated) {
-    next();
+    return next();
+  }
+
+  // 检查 GET 请求中的 password 参数
+  if (req.method === 'GET' && req.query.password === AUTH_PASSWORD) {
+    console.log('通过 GET 参数验证通过');
+    return next();
+  }
+
+  // 未通过认证
+  // 对于 API 请求返回 JSON 错误
+  if (req.path.startsWith('/api/') && !req.path.startsWith('/api/login') && !req.path.startsWith('/api/auth-status') && !req.path.startsWith('/api/health')) {
+    res.status(401).json({ error: '需要身份验证' });
   } else {
-    // 对于 API 请求返回 JSON 错误
-    if (req.path.startsWith('/api/') && !req.path.startsWith('/api/login') && !req.path.startsWith('/api/auth-status') && !req.path.startsWith('/api/health')) {
-      res.status(401).json({ error: '需要身份验证' });
-    } else {
-      // 对于页面请求重定向到登录页
-      res.redirect('/login.html');
-    }
+    // 对于页面请求重定向到登录页
+    res.redirect('/login.html');
   }
 };
 
